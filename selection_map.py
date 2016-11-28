@@ -24,7 +24,7 @@ from bokeh.palettes import Viridis6 as palette
 
 #%% Munge the Raw Data
 
-path = "V:\\PIER_Data\\Eric_Fournier\\JSON\\la_county_neighborhood_boundaries_single.json"
+path = "/Users/edf/Repositories/EnergyAtlas/data/la_county_neighborhood_boundaries_single.json"
 raw_source = pd.read_json(path, typ='series', orient='column')
 
 neighborhoods = {}
@@ -84,7 +84,7 @@ source = ColumnDataSource(data=dict(
 
 TOOLS="pan,wheel_zoom,box_zoom,reset,hover,save"
 
-p = figure(title="Los Angeles County Neighborhoods", tools=TOOLS, plot_width=900, plot_height=900, min_border=10, x_axis_location=None, y_axis_location=None,webgl=True)
+p = figure(title="Los Angeles County Neighborhoods", tools=TOOLS, plot_width=475, plot_height=600, min_border=10, x_axis_location=None, y_axis_location=None,webgl=True)
 
 p.grid.grid_line_color = None
 
@@ -100,6 +100,6 @@ hover.tooltips = [
     ("Mean Annual Energy Consumption [MBTU / Megaparcel]", "@energy")
 ]
 
-output_file("V:\\PIER_Data\\Eric_Fournier\\HTML\\selection_map.html", title="selection_map.py example")
+output_file("/Users/edf/Repositories/EnergyAtlas/selection_map.html", title="selection_map.py example")
 
 show(p)
