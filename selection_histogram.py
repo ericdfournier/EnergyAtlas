@@ -63,8 +63,8 @@ y_axis = Select(title='Y-Axis', value='Energy Consumption [MBTU]', options=sorte
 source = ColumnDataSource(data=dict(x=[],y=[]))
 
 source.data = dict(
-    x=df[axis_map[x_axis.value]],
-    y=df[axis_map[y_axis.value]],
+    x = df[axis_map[x_axis.value]].values,
+    y = df[axis_map[y_axis.value]].values
 )
 
 #%% create the scatter plot
@@ -84,7 +84,9 @@ r = p.scatter('x', 'y', source=source, size=3, color="#3A5785", alpha=0.6, selec
 
 # %% create the horizontal histogram
 
-hhist, hedges = np.histogram(np.array(source.data['x']), bins=20)
+x = np.array(source.data['x'])
+
+hhist, hedges = np.histogram(x, bins=20)
 hzeros = np.zeros(len(hedges)-1)
 hmax = max(hhist)*1.1
 
@@ -99,7 +101,7 @@ ph = figure(toolbar_location=None, plot_width=p.plot_width,
 ph.yaxis.major_label_orientation = np.pi/4
 ph.xaxis.axis_label = x_axis.value
 
-ph.quad(bottom=0, left=hedges[:-1], right=hedges[1:], top=hhist, 
+hh0 = ph.quad(bottom=0, left=hedges[:-1], right=hedges[1:], top=hhist, 
         color="white", line_color="#3A5785")
 hh1 = ph.quad(bottom=0, left=hedges[:-1], right=hedges[1:], top=hzeros, 
               alpha=0.5, **LINE_ARGS_1)
@@ -108,7 +110,9 @@ hh2 = ph.quad(bottom=0, left=hedges[:-1], right=hedges[1:], top=hzeros,
 
 #%% create the vertical histogram
 
-vhist, vedges = np.histogram(np.array(source.data['y']), bins=20)
+y = np.array(source.data['y'])
+
+vhist, vedges = np.histogram(y, bins=20)
 vzeros = np.zeros(len(vedges)-1)
 vmax = max(vhist)*1.1
 
@@ -120,35 +124,59 @@ pv = figure(toolbar_location=None, plot_width=200,
 pv.xaxis.major_label_orientation = np.pi/4
 pv.yaxis.axis_label = y_axis.value
 
-pv.quad(left=0, bottom=vedges[:-1], top=vedges[1:], right=vhist, 
+vh0 = pv.quad(left=0, bottom=vedges[:-1], top=vedges[1:], right=vhist, 
         color="white", line_color="#3A5785")
 vh1 = pv.quad(left=0, bottom=vedges[:-1], top=vedges[1:], right=vzeros, 
               alpha=0.5, **LINE_ARGS_1)
 vh2 = pv.quad(left=0, bottom=vedges[:-1], top=vedges[1:], right=vzeros, 
               alpha=0.1, **LINE_ARGS_2)
 
-#%% Update Figure
+#%% Update Histograms
+
+def update_major_histograms(source):
     
-def update_figure():
+    hhist0, hedges0 = np.histogram(np.array(source.data['x']), bins=20)
+    vhist0, vedges0 = np.histogram(np.array(source.data['y']), bins=20)
+    
+    hh0.data_source.data['right'] = hedges0[1:]
+    hh0.data_source.data['left'] = hedges0[:-1]
+    hh0.data_source.data['top'] = hhist0
+
+    vh0.data_source.data['top'] = vedges0[1:]
+    vh0.data_source.data['bottom'] = vedges0[:-1]
+    vh0.data_source.data['right'] = vhist0
+
+#%% Update X-axis
+    
+def update_x_axis(attr, old, new):
                 
-    source.data = dict(
-        x=df[axis_map[x_axis.value]],
-        y=df[axis_map[y_axis.value]],
-    )
-        
-    ph.xaxis.axis_label = x_axis.value
-    pv.yaxis.axis_label = y_axis.value    
+    source.data['x'] = df[axis_map[new]].values
     
-    minx = min(source.data['x'])
-    maxx = max(source.data['x'])
-    miny = min(source.data['y'])
-    maxy = max(source.data['y'])
+#    minx = min(source.data['x'])
+#    maxx = max(source.data['x'])
+#    
+#    p.x_range = Range1d(minx-(0.1*maxx),maxx+(0.1*maxx))
+#
+#    ph.xaxis.axis_label = new
+#    ph.x_range = p.x_range
     
-    p.x_range = Range1d(minx-(0.1*maxx),maxx+(0.1*maxx))
-    p.y_range = Range1d(miny-(0.1*maxy),maxy+(0.1*maxy))
+    update_major_histograms(source)
     
-    ph.x_range = p.x_range
-    pv.y_range = p.y_range
+#%% Update Y-axis
+
+def update_y_axis(attr, old, new):
+    
+    source.data['y'] = df[axis_map[new]].values
+    
+#    miny = min(source.data['y'])
+#    maxy = max(source.data['y'])
+#    
+#    p.y_range = Range1d(miny-(0.1*maxy),maxy+(0.1*maxy))
+#    
+#    pv.yaxis.axis_label = y_axis.value
+#    pv.y_range = p.y_range
+    
+    update_major_histograms(source)
 
 #%% Update Data
 
@@ -174,7 +202,7 @@ def update_minor_histograms(inds):
         hhist2, _ = np.histogram(np.array(source.data['x'][neg_inds]), bins=hedges)
         vhist1, _ = np.histogram(np.array(source.data['y'][inds]), bins=vedges)
         vhist2, _ = np.histogram(np.array(source.data['y'][neg_inds]), bins=vedges)
-
+    
     hh1.data_source.data["top"]   =  hhist1
     hh2.data_source.data["top"]   = -hhist2
     vh1.data_source.data["right"] =  vhist1    
@@ -184,30 +212,27 @@ def update_minor_histograms(inds):
     
 def update_selection(attr, old, new):
     
-    update_figure()
+    #TODO: Something is wrong with the selection process...it's not generating
+    # the minor histograms.
         
-    inds = np.array(new['1d']['indices'], dtype=int)
-    
+    inds = np.array(new['1d']['indices'], dtype=np.int)
+        
     update_stats(inds)
     update_minor_histograms(inds)
 
 #%% Create Selection Widgets
 
-controls = [x_axis, y_axis]
-for control in controls:
-    control.on_change('value', lambda attr, old, new: update_figure())    
-    
+r.data_source.on_change('selected', update_selection)
+x_axis.on_change('value', update_x_axis)
+y_axis.on_change('value', update_y_axis)
+
 sizing_mode = 'fixed' 
 
-update_figure()
-
-widgets = widgetbox(*controls, sizing_mode=sizing_mode)
+widgets = widgetbox([x_axis, y_axis], sizing_mode=sizing_mode)
 layout = row(column(widgets,stats), column(row(p, pv), row(ph, Spacer(width=200, height=200))))
 
 curdoc().add_root(layout)
 curdoc().title = "Selection Histogram"
-
-r.data_source.on_change('selected', update_selection)
 
 # TODO: Integrate slider functionality into selection update callback
 
