@@ -117,11 +117,6 @@ axis_map = {
     "Construction Vintage [Year]" : "year"
 }
 
-#%% create input controls
-
-x_axis = Select(title='X-Axis', value='Building Size [sq.ft.]', options=sorted(axis_map.keys()))
-y_axis = Select(title='Y-Axis', value='Energy Consumption [MBTU]', options=sorted(axis_map.keys()))
-
 #%% create map columnar data source
 
 map_source = ColumnDataSource(data=dict(
@@ -134,8 +129,8 @@ map_source = ColumnDataSource(data=dict(
 #%% create plot columnar data source
 
 plot_source = ColumnDataSource(data=dict(
-    x = df[axis_map[x_axis.value]].values,
-    y = df[axis_map[y_axis.value]].values
+    x = [],
+    y = []
 ))
 
 #%% create stats
@@ -146,7 +141,9 @@ stats = PreText(text='', width=500)
 
 MAP_TOOLS="pan,wheel_zoom,reset,hover,save"
 
-m = figure(title="Los Angeles County Neighborhoods", tools=MAP_TOOLS, plot_width=700, plot_height=900, min_border=10, x_axis_location=None, y_axis_location=None,webgl=True)
+m = figure(title="Los Angeles County Neighborhoods", tools=MAP_TOOLS, 
+           plot_width=700, plot_height=900, min_border=10, 
+           x_axis_location=None, y_axis_location=None,webgl=True)
 m.grid.grid_line_color = None
 
 mp = m.patches('lon','lat', source=map_source,
@@ -163,83 +160,85 @@ hover.tooltips = [
 
 #%% create the scatter plot
 
-PLOT_TOOLS="pan,wheel_zoom,box_zoom,box_select,lasso_select,reset"
+def create_scatter(plot_source):
 
-p = figure(tools=PLOT_TOOLS, plot_width=700, plot_height=700, min_border=50, 
-       min_border_left=50, toolbar_location="right", 
-       x_axis_location="above", y_axis_location="left", 
-       title="Linked Histograms", webgl=True)
+    PLOT_TOOLS="pan,wheel_zoom,box_zoom,box_select,lasso_select,reset"
+    
+    p = figure(tools=PLOT_TOOLS, plot_width=700, plot_height=700, min_border=50, 
+           min_border_left=50, toolbar_location="right", 
+           x_axis_location="above", y_axis_location="left", 
+           title="Linked Histograms", webgl=True)
+    
+    p.background_fill_color = None
+    p.select(BoxSelectTool).select_every_mousemove = False
+    p.select(LassoSelectTool).select_every_mousemove = False  
+    
+    p.circle('x', 'y', source=plot_source, size=3, color="#3A5785", alpha=0.6, 
+             selection_color="orange", nonselection_alpha=0.1, selection_alpha=0.4)
 
-p.background_fill_color = None
-p.select(BoxSelectTool).select_every_mousemove = False
-p.select(LassoSelectTool).select_every_mousemove = False    
-
-r = p.scatter('x', 'y', source=plot_source, size=3, color="#3A5785", alpha=0.6, selection_color="orange")
-
-maxx = max(plot_source.data['x'])*1.1
-minx = min(plot_source.data['x'])-(max(plot_source.data['x'])*0.1)
-maxy = max(plot_source.data['y'])*1.1
-miny = min(plot_source.data['y'])-(max(plot_source.data['y'])*0.1)
-
-p.x_range = Range1d(end=maxx,start=minx)
-p.y_range = Range1d(end=maxy,start=miny)
-
-#%% Fix line styles
-
-LINE_ARGS_1 = dict(color="orange", line_color=None)
-LINE_ARGS_2 = dict(color="#3A5785", line_color=None)
+    return p
 
 # %% create the horizontal histogram
 
-x = np.array(plot_source.data['x'])
+def create_major_x_histogram(plot_source):
 
-hhist0, hedges0 = np.histogram(x, bins=20)
-hzeros0 = np.zeros(len(hedges0)-1)
-hmax0 = max(hhist0)*1.1
+    LINE_ARGS_1 = dict(color="orange", line_color=None)
+    LINE_ARGS_2 = dict(color="#3A5785", line_color=None)
+    
+    hhist0, hedges0 = np.histogram(np.array(plot_source.data['x']), bins=20)
+    hzeros0 = np.zeros(len(hedges0)-1)
+    hmax0 = max(hhist0)*1.1
+    
+    ph = figure(toolbar_location=None, plot_width=p.plot_width, 
+                plot_height=200, x_range=p.x_range, y_range = Range1d(end=hmax0,start=-hmax0),
+                min_border=10, min_border_left=50, y_axis_location="right", 
+                webgl=True)
+    
+    ph.yaxis.major_label_orientation = np.pi/4
+    ph.xaxis.axis_label = x_axis.value
+    
+    hh0 = ph.quad(bottom=0, left=hedges0[:-1], right=hedges0[1:], top=hhist0, 
+            color="white", line_color="#3A5785")
+    hh1 = ph.quad(bottom=0, left=hedges0[:-1], right=hedges0[1:], top=hzeros0, 
+                  alpha=0.5, **LINE_ARGS_1)
+    hh2 = ph.quad(bottom=0, left=hedges0[:-1], right=hedges0[1:], top=hzeros0, 
+                  alpha=0.1, **LINE_ARGS_2)
 
-ph = figure(toolbar_location=None, plot_width=p.plot_width, 
-            plot_height=200, x_range=p.x_range, y_range = Range1d(end=hmax0,start=-hmax0),
-            min_border=10, min_border_left=50, y_axis_location="right", 
-            webgl=True)
-
-ph.yaxis.major_label_orientation = np.pi/4
-ph.xaxis.axis_label = x_axis.value
-
-hh0 = ph.quad(bottom=0, left=hedges0[:-1], right=hedges0[1:], top=hhist0, 
-        color="white", line_color="#3A5785")
-hh1 = ph.quad(bottom=0, left=hedges0[:-1], right=hedges0[1:], top=hzeros0, 
-              alpha=0.5, **LINE_ARGS_1)
-hh2 = ph.quad(bottom=0, left=hedges0[:-1], right=hedges0[1:], top=hzeros0, 
-              alpha=0.1, **LINE_ARGS_2)
+    return ph, hh0, hh1, hh2, hhist0, hedges0
 
 #%% create the vertical histogram
 
-y = np.array(plot_source.data['y'])
+def create_major_y_histogram(plot_source):
+    
+    LINE_ARGS_1 = dict(color="orange", line_color=None)
+    LINE_ARGS_2 = dict(color="#3A5785", line_color=None)
 
-vhist0, vedges0 = np.histogram(y, bins=20)
-vzeros0 = np.zeros(len(vedges0)-1)
-vmax0 = max(vhist0)*1.1
+    vhist0, vedges0 = np.histogram(np.array(plot_source.data['y']), bins=20)
+    vzeros0 = np.zeros(len(vedges0)-1)
+    vmax0 = max(vhist0)*1.1
+    
+    pv = figure(toolbar_location=None, plot_width=200, 
+                plot_height=p.plot_height, x_range = Range1d(end=vmax0, start=-vmax0),
+                y_range=p.y_range, min_border=10, y_axis_location="right", 
+                webgl=True)
+    
+    pv.xaxis.major_label_orientation = np.pi/4
+    pv.yaxis.axis_label = y_axis.value
+    
+    vh0 = pv.quad(left=0, bottom=vedges0[:-1], top=vedges0[1:], right=vhist0, 
+            color="white", line_color="#3A5785")
+    vh1 = pv.quad(left=0, bottom=vedges0[:-1], top=vedges0[1:], right=vzeros0, 
+                  alpha=0.5, **LINE_ARGS_1)
+    vh2 = pv.quad(left=0, bottom=vedges0[:-1], top=vedges0[1:], right=vzeros0, 
+                  alpha=0.1, **LINE_ARGS_2)
 
-pv = figure(toolbar_location=None, plot_width=200, 
-            plot_height=p.plot_height, x_range = Range1d(end=vmax0, start=-vmax0),
-            y_range=p.y_range, min_border=10, y_axis_location="right", 
-            webgl=True)
-
-pv.xaxis.major_label_orientation = np.pi/4
-pv.yaxis.axis_label = y_axis.value
-
-vh0 = pv.quad(left=0, bottom=vedges0[:-1], top=vedges0[1:], right=vhist0, 
-        color="white", line_color="#3A5785")
-vh1 = pv.quad(left=0, bottom=vedges0[:-1], top=vedges0[1:], right=vzeros0, 
-              alpha=0.5, **LINE_ARGS_1)
-vh2 = pv.quad(left=0, bottom=vedges0[:-1], top=vedges0[1:], right=vzeros0, 
-              alpha=0.1, **LINE_ARGS_2)
-
+    return pv, vh0, vh1, vh2, vhist0, vedges0
+    
 #%% Update Major X Histograms
 
-def update_major_x_histogram(source):
+def update_major_x_histogram(plot_source):
     
-    hhist0, hedges0 = np.histogram(np.array(source.data['x']), bins=20)
+    hhist0, hedges0 = np.histogram(np.array(plot_source.data['x']), bins=20)
     
     hh0.data_source.data['right'] = hedges0[1:]
     hh0.data_source.data['left'] = hedges0[:-1]
@@ -249,9 +248,9 @@ def update_major_x_histogram(source):
     
 #%% Update Major Y Histograms
 
-def update_major_y_histogram(source):
+def update_major_y_histogram(plot_source):
     
-    vhist0, vedges0 = np.histogram(np.array(source.data['y']), bins=20)
+    vhist0, vedges0 = np.histogram(np.array(plot_source.data['y']), bins=20)
 
     vh0.data_source.data['top'] = vedges0[1:]
     vh0.data_source.data['bottom'] = vedges0[:-1]
@@ -265,10 +264,10 @@ def update_x_axis(attr, old, new):
                 
     plot_source.data['x'] = df[axis_map[new]].values
     
-    maxx = max(plot_source.data['x'])*1.1
-    minx = min(plot_source.data['x'])-(max(plot_source.data['x'])*0.1)
-    
-    p.x_range = Range1d(end=maxx,start=minx)
+#    maxx = max(plot_source.data['x'])*1.1
+#    minx = min(plot_source.data['x'])-(max(plot_source.data['x'])*0.1)
+#    p.x_range = Range1d(end=maxx,start=minx)
+
     ph.x_range = p.x_range
     ph.xaxis.axis_label = new
     
@@ -279,16 +278,16 @@ def update_x_axis(attr, old, new):
 def update_y_axis(attr, old, new):
     
     plot_source.data['y'] = df[axis_map[new]].values
+
+#    maxy = max(plot_source.data['y'])*1.1
+#    miny = min(plot_source.data['y'])-(max(plot_source.data['y'])*0.1)
+#    p.y_range = Range1d(end=maxy,start=miny)
     
-    maxy = max(plot_source.data['y'])*1.1
-    miny = min(plot_source.data['y'])-(max(plot_source.data['y'])*0.1)
-    
-    p.y_range = Range1d(end=maxy,start=miny)
     pv.y_range = p.y_range
-    pv.yaxis.axis_label = y_axis.value
+    pv.yaxis.axis_label = new
 
     update_major_y_histogram(plot_source)
-
+        
 #%% Update Stats Panel
 
 def update_stats(inds):
@@ -330,16 +329,6 @@ def update_minor_y_histogram(inds):
     vh1.data_source.data["right"] =  vhist1    
     vh2.data_source.data["right"] = -vhist2
 
-#%% Update Map
-
-#def update_map(inds):
-#    
-#    if len(inds) < 100:
-#        # Decolor map
-#    else:
-#       # Color map on the basis of selected points
-#       print('test')
-        
 #%% Update Selection    
     
 def update_selection(attr, old, new):
@@ -349,22 +338,47 @@ def update_selection(attr, old, new):
     update_stats(inds)
     update_minor_x_histogram(inds)
     update_minor_y_histogram(inds)
-        
-    #%% Create Selection Widgets
 
-sizing_mode = 'fixed' 
+#%% Update plot source data
 
+def update_data(plot_source, x_axis_name, y_axis_name):
+    
+    plot_source.data['x'] = df[axis_map[x_axis_name]].values
+    plot_source.data['y'] = df[axis_map[y_axis_name]].values
+    
+    return plot_source
+    
+#%% create axes selectors
+
+x_axis = Select(title='X-Axis', options=sorted(axis_map.keys()))
+y_axis = Select(title='Y-Axis', options=sorted(axis_map.keys()))
+
+#%% Generate Plot Variables
+
+x_axis_name = 'Building Size [sq.ft.]'
+y_axis_name = 'Energy Consumption [MBTU]'
+
+# plot_source = update_data(plot_source, x_axis_name, y_axis_name)
+
+p = create_scatter(plot_source)
+ph, hh0, hh1, hh2, hzeros0, hedges0 = create_major_x_histogram(plot_source)
+pv, vh0, vh1, vh2, vzeros0, vedges0 = create_major_y_histogram(plot_source)
+
+#%% Create Widgets and Layout
+
+sizing_mode = 'fixed'
 widgets = widgetbox([x_axis, y_axis], sizing_mode=sizing_mode)
-layout = column(row(column(row(p, pv), row(ph, Spacer(width=200, height=200))), column(Spacer(width=50)), column(m)), row(widgets,stats))
+layout = column(row(column(row(p, pv), row(ph, Spacer(width=200, height=200))),
+                    column(Spacer(width=50)), column(m)), row(widgets,stats))
 
 curdoc().add_root(layout)
 curdoc().title = "Selection Histogram"
 
+inds = np.array([],dtype=int)
+
 x_axis.on_change('value', update_x_axis)
 y_axis.on_change('value', update_y_axis)
-r.data_source.on_change('selected', update_selection)
-
-inds = np.array([],dtype=int)
+plot_source.on_change('selected', update_selection)
 
 # TODO: Integrate slider functionality into selection update callback
 

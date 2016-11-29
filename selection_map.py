@@ -26,7 +26,6 @@ from bokeh.palettes import Viridis6 as palette
 
 path = "/Users/edf/Repositories/EnergyAtlas/data/la_county_neighborhood_boundaries_single.json"
 raw_source = pd.read_json(path, typ='series', orient='column')
-
 neighborhoods = {}
 
 for i,feature in enumerate(raw_source.features):
