@@ -139,24 +139,28 @@ stats = PreText(text='', width=500)
 
 #%% create map plot
 
-MAP_TOOLS="pan,wheel_zoom,reset,hover,save"
+def create_map(map_source):
 
-m = figure(title="Los Angeles County Neighborhoods", tools=MAP_TOOLS, 
-           plot_width=700, plot_height=900, min_border=10, 
-           x_axis_location=None, y_axis_location=None,webgl=True)
-m.grid.grid_line_color = None
+    MAP_TOOLS="pan,wheel_zoom,reset,hover,save"
+    
+    m = figure(title="Los Angeles County Neighborhoods", tools=MAP_TOOLS, 
+               plot_width=700, plot_height=900, min_border=10, 
+               x_axis_location=None, y_axis_location=None,webgl=True)
+    m.grid.grid_line_color = None
+    
+    mp = m.patches('lon','lat', source=map_source,
+              fill_color={'field':'avg_consumption','transform':color_mapper},
+              line_color="white", line_width=0.5)
+              
+    hover = m.select_one(HoverTool)
+    hover.point_policy = "follow_mouse"
+    hover.tooltips = [
+        ("Name", "@name"),
+        ("(Long, Lat)", "($x, $y)"),
+        ("Mean Annual Energy Consumption [MBTU / Megaparcel]", "@avg_consumption")
+    ]
 
-mp = m.patches('lon','lat', source=map_source,
-          fill_color={'field':'avg_consumption','transform':color_mapper},
-          line_color="white", line_width=0.5)
-          
-hover = m.select_one(HoverTool)
-hover.point_policy = "follow_mouse"
-hover.tooltips = [
-    ("Name", "@name"),
-    ("(Long, Lat)", "($x, $y)"),
-    ("Mean Annual Energy Consumption [MBTU / Megaparcel]", "@avg_consumption")
-]
+    return m, mp
 
 #%% create the scatter plot
 
@@ -240,11 +244,14 @@ def update_major_x_histogram(plot_source):
     
     hhist0, hedges0 = np.histogram(np.array(plot_source.data['x']), bins=20)
     
+    hmax0 = max(hhist0)*1.1
+    ph.y_range = Range1d(end=hmax0,start=-hmax0)
+    
     hh0.data_source.data['right'] = hedges0[1:]
     hh0.data_source.data['left'] = hedges0[:-1]
     hh0.data_source.data['top'] = hhist0
     
-    update_minor_x_histogram(inds)
+    update_minor_x_histogram(plot_source, hedges0, inds)
     
 #%% Update Major Y Histograms
 
@@ -252,21 +259,25 @@ def update_major_y_histogram(plot_source):
     
     vhist0, vedges0 = np.histogram(np.array(plot_source.data['y']), bins=20)
 
+    vmax0 = max(vhist0)*1.1
+    pv.x_range = Range1d(end=vmax0,start=-vmax0)
+    
     vh0.data_source.data['top'] = vedges0[1:]
     vh0.data_source.data['bottom'] = vedges0[:-1]
     vh0.data_source.data['right'] = vhist0
 
-    update_minor_y_histogram(inds)
+    update_minor_y_histogram(plot_source, vedges0, inds)
 
 #%% Update X-axis
     
 def update_x_axis(attr, old, new):
                 
     plot_source.data['x'] = df[axis_map[new]].values
-    
-#    maxx = max(plot_source.data['x'])*1.1
-#    minx = min(plot_source.data['x'])-(max(plot_source.data['x'])*0.1)
-#    p.x_range = Range1d(end=maxx,start=minx)
+
+    maxx = max(plot_source.data['x'])*1.1
+    minx = min(plot_source.data['x'])-(max(plot_source.data['x'])*0.1)
+
+    p.x_range = Range1d(end=maxx,start=minx)
 
     ph.x_range = p.x_range
     ph.xaxis.axis_label = new
@@ -279,9 +290,10 @@ def update_y_axis(attr, old, new):
     
     plot_source.data['y'] = df[axis_map[new]].values
 
-#    maxy = max(plot_source.data['y'])*1.1
-#    miny = min(plot_source.data['y'])-(max(plot_source.data['y'])*0.1)
-#    p.y_range = Range1d(end=maxy,start=miny)
+    maxy = max(plot_source.data['y'])*1.1
+    miny = min(plot_source.data['y'])-(max(plot_source.data['y'])*0.1)
+    
+    p.y_range = Range1d(end=maxy,start=miny)
     
     pv.y_range = p.y_range
     pv.yaxis.axis_label = new
@@ -299,7 +311,7 @@ def update_stats(inds):
 
 #%% Upated Minor x Histogram
 
-def update_minor_x_histogram(inds):
+def update_minor_x_histogram(plot_source, hedges0, inds):
         
     if len(inds) == 0 or len(inds) == len(df['size'].values):
         hhist1, hhist2 = hzeros0, hzeros0
@@ -315,7 +327,7 @@ def update_minor_x_histogram(inds):
         
 #%% Update Minor y Histogram
 
-def update_minor_y_histogram(inds):
+def update_minor_y_histogram(plot_source, vedges0, inds):
         
     if len(inds) == 0 or len(inds) == len(df['size'].values):
         vhist1, vhist2 = vzeros0, vzeros0
@@ -336,33 +348,33 @@ def update_selection(attr, old, new):
     inds = np.array(new['1d']['indices'], dtype=int)
         
     update_stats(inds)
-    update_minor_x_histogram(inds)
-    update_minor_y_histogram(inds)
+    update_minor_x_histogram(plot_source, hedges0, inds)
+    update_minor_y_histogram(plot_source, vedges0, inds)
+    
+    return inds
 
 #%% Update plot source data
 
-def update_data(plot_source, x_axis_name, y_axis_name):
+def update_data():
     
-    plot_source.data['x'] = df[axis_map[x_axis_name]].values
-    plot_source.data['y'] = df[axis_map[y_axis_name]].values
-    
-    return plot_source
-    
+    plot_source.data['x'] = df[axis_map[x_axis.value]].values
+    plot_source.data['y'] = df[axis_map[y_axis.value]].values
+        
 #%% create axes selectors
 
-x_axis = Select(title='X-Axis', options=sorted(axis_map.keys()))
-y_axis = Select(title='Y-Axis', options=sorted(axis_map.keys()))
+x_axis = Select(title='X-Axis', value='Building Size [sq.ft.]', options=sorted(axis_map.keys()))
+y_axis = Select(title='Y-Axis', value='Energy Consumption [MBTU]', options=sorted(axis_map.keys()))
 
 #%% Generate Plot Variables
 
-x_axis_name = 'Building Size [sq.ft.]'
-y_axis_name = 'Energy Consumption [MBTU]'
+inds = np.asarray([], dtype=int)
 
-# plot_source = update_data(plot_source, x_axis_name, y_axis_name)
+update_data()
 
 p = create_scatter(plot_source)
 ph, hh0, hh1, hh2, hzeros0, hedges0 = create_major_x_histogram(plot_source)
 pv, vh0, vh1, vh2, vzeros0, vedges0 = create_major_y_histogram(plot_source)
+m, mp = create_map(map_source)
 
 #%% Create Widgets and Layout
 
@@ -370,11 +382,8 @@ sizing_mode = 'fixed'
 widgets = widgetbox([x_axis, y_axis], sizing_mode=sizing_mode)
 layout = column(row(column(row(p, pv), row(ph, Spacer(width=200, height=200))),
                     column(Spacer(width=50)), column(m)), row(widgets,stats))
-
 curdoc().add_root(layout)
 curdoc().title = "Selection Histogram"
-
-inds = np.array([],dtype=int)
 
 x_axis.on_change('value', update_x_axis)
 y_axis.on_change('value', update_y_axis)
