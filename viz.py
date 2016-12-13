@@ -23,7 +23,7 @@ from bokeh.plotting import (
 
 #%% Load Static Map Datasource
 
-path = "/Users/edf/Repositories/EnergyAtlas/data/la_county_neighborhood_boundaries_single.json"
+path = "./data/la_county_neighborhood_boundaries_single.json"
 map_source = pd.read_json(path, typ='series', orient='column')
 neighborhoods = {}
 
