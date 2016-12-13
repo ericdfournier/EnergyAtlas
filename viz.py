@@ -1,4 +1,4 @@
-#%% package imports
+#%% Package Imports
 
 import numpy as np
 import pandas as pd
@@ -20,15 +20,14 @@ from bokeh.plotting import (
     figure, 
     curdoc,
     )
-from bokeh.charts import Histogram
 
-#%% load map datasource
+#%% Load Static Map Datasource
 
 path = "/Users/edf/Repositories/EnergyAtlas/data/la_county_neighborhood_boundaries_single.json"
 map_source = pd.read_json(path, typ='series', orient='column')
 neighborhoods = {}
 
-#%% clean raw map datasource
+#%% Clean Raw Static Map Datasource
 
 for i,feature in enumerate(map_source.features):
     
@@ -41,9 +40,7 @@ for i,feature in enumerate(map_source.features):
         neighborhoods[i]['lat'] = lat
         neighborhoods[i]['lon'] = lon
         neighborhoods[i]['name'] = name
-    
-    # There is still an issue with the parsing of multi-part polygons
-    
+        
     elif feature['geometry']['type'] == 'MultiPolygon':
         
         coords = feature['geometry']['coordinates'][:]
@@ -54,7 +51,6 @@ for i,feature in enumerate(map_source.features):
         for j, poly in enumerate(coords):
             
             lon,lat,_ = np.reshape(coords[j][0],[len(coords[j][0]),3]).T
-            # There is a nesting list issue here that might be resolved in the future
             lons.append(lon)
             lats.append(lat)
         
@@ -63,13 +59,23 @@ for i,feature in enumerate(map_source.features):
         neighborhoods[i]['lon'] = lons
         neighborhoods[i]['name'] = name
 
-#%% Prep Source Data for Plotting
+#%% Prep Static Map Source Data for Plotting
 
 neighborhood_lon = np.asarray([neighborhood["lon"] for neighborhood in neighborhoods.values()])
 neighborhood_lat = np.asarray([neighborhood["lat"] for neighborhood in neighborhoods.values()])
 neighborhood_names = np.asarray([neighborhood['name'] for neighborhood in neighborhoods.values()])
 neighborhood_avg = np.random.randint(100,300,len(neighborhood_names))       
 color = np.asarray(["white"]*len(neighborhood_names))
+
+#%% Create Map columnar data source
+
+map_source = ColumnDataSource(data=dict(
+    lon = neighborhood_lon,
+    lat = neighborhood_lat,
+    avg_consumption = neighborhood_avg,
+    name = neighborhood_names,
+    color = color
+))             
 
 #%% Generate Random Energy Data for Visualization
 
@@ -92,18 +98,8 @@ for i in range(size):
     neighborhoods[i] = unique_names[ind]
 
 neighborhoods = np.asarray(neighborhoods)
-    
-     #%% create map columnar data source
 
-map_source = ColumnDataSource(data=dict(
-    lon = neighborhood_lon,
-    lat = neighborhood_lat,
-    avg_consumption = neighborhood_avg,
-    name = neighborhood_names,
-    color = color
-))             
-
-#%% create reference data frame
+#%% Create Reference Data Frame
 
 df = pd.DataFrame()
 
@@ -113,7 +109,7 @@ df['intensity'] = x_rnd_y_rnd
 df['year'] = year_rnd
 df['name'] = neighborhoods
 
-#%% create axis map
+#%% Create Axis Map
 
 axis_map = {
     "Energy Consumption [MBTU]": "consumption",
@@ -122,18 +118,18 @@ axis_map = {
     "Construction Vintage [Year]" : "year"
 }
 
-#%% create plot columnar data source
+#%% Create Plot Columnar Data Source
 
 plot_source = ColumnDataSource(data=dict(
     x = [],
     y = []
 ))
 
-#%% create stats
+#%% Create Stats Widget
 
 stats = PreText(text='', width=500)
 
-#%% create map plot
+#%% Create Map Plot
 
 def create_map(map_source):
     
@@ -160,7 +156,7 @@ def create_map(map_source):
 
     return m
 
-#%% create the scatter plot
+#%% Create Scatter Plot
 
 def create_scatter(plot_source):
 
@@ -216,7 +212,7 @@ def create_y_histogram(plot_source):
     
     return py, yh
     
-#%% Update X-axis
+#%% Update X axis
     
 def update_x_axis(attr, old, new):
     
@@ -227,7 +223,7 @@ def update_x_axis(attr, old, new):
     xh.data_source.data['left'] = xedges0[:-1]
     xh.data_source.data['top'] = xhist0  
 
-#%% Update Y-axis
+#%% Update Y axis
 
 def update_y_axis(attr, old, new):
     
@@ -238,7 +234,7 @@ def update_y_axis(attr, old, new):
     yh.data_source.data['left'] = yedges0[:-1]
     yh.data_source.data['top'] = yhist0  
     
-    #%% Update Stats Panel
+#%% Update Stats Panel Widget
 
 def update_stats(inds):
         
@@ -274,14 +270,14 @@ def update_selection(attr, old, new):
     
     return inds
     
-#%% Update plot source data
+#%% Update Plot Source Data
 
 def update_data():
     
     plot_source.data['x'] = df[axis_map[x_axis.value]].values
     plot_source.data['y'] = df[axis_map[y_axis.value]].values
         
-#%% create axes selectors
+#%% Create Axes Selector Widgets
 
 x_axis = Select(title='X-Axis', value='Building Size [sq.ft.]', 
                 options=sorted(axis_map.keys()))
@@ -297,7 +293,7 @@ px, xh = create_x_histogram(plot_source)
 py, yh = create_y_histogram(plot_source)
 m = create_map(map_source)
 
-#%% Create Widgets and Layout
+#%% Generate Layout
 
 sizing_mode = 'fixed'
 widgets = widgetbox([x_axis, y_axis], sizing_mode=sizing_mode)
