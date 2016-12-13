@@ -68,9 +68,10 @@ for i,feature in enumerate(map_source.features):
 
 #%% Prep Source Data for Plotting
 
-neighborhood_lon = [neighborhood["lon"] for neighborhood in neighborhoods.values()]
-neighborhood_lat = [neighborhood["lat"] for neighborhood in neighborhoods.values()]
-neighborhood_names = [neighborhood['name'] for neighborhood in neighborhoods.values()]
+neighborhood_lon = np.asarray([neighborhood["lon"] for neighborhood in neighborhoods.values()])
+neighborhood_lat = np.asarray([neighborhood["lat"] for neighborhood in neighborhoods.values()])
+neighborhood_names = np.asarray([neighborhood['name'] for neighborhood in neighborhoods.values()])
+neigh_avg = np.asarray(np.random.randint(100,300,len(neighborhood_names)))
 color_mapper = LogColorMapper(palette=palette)
 
 #%% Generate Random Energy Data for Visualization
@@ -93,11 +94,6 @@ neighborhoods = [None]*size
 for i in range(size):
     ind = np.random.randint(0,len(unique_names),1,dtype=int)
     neighborhoods[i] = unique_names[ind]
-
-neigh_avg = np.zeros(len(unique_names),dtype=float)
-for j in range(len(neigh_avg)):
-    ind = [i for i, x in enumerate(neighborhoods) if x == unique_names[j]]
-    neigh_avg[j] = np.average(y_rnd[ind])
     
 #%% create reference data frame
 
