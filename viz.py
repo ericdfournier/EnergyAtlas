@@ -23,14 +23,14 @@ from bokeh.plotting import (
 
 #%% Load Static Map Datasource
 
-path = "./data/la_county_neighborhood_boundaries_single.json"
+path = "/Users/edf/Repositories/EnergyAtlas/data/la_county_neighborhood_boundaries_single_simple.json"
 map_source = pd.read_json(path, typ='series', orient='column')
 neighborhoods = {}
 
 #%% Clean Raw Static Map Datasource
 
 for i,feature in enumerate(map_source.features):
-    
+        
     if feature['geometry']['type'] == 'Polygon':
         
         coords = feature['geometry']['coordinates'][0]
