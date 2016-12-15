@@ -6,6 +6,7 @@ import pandas as pd
 from bokeh.layouts import (
     row, 
     column,
+    Spacer,
     widgetbox
     )
 from bokeh.models import (
@@ -23,7 +24,7 @@ from bokeh.plotting import (
 
 #%% Load Static Map Datasource
 
-path = "/Users/edf/Repositories/EnergyAtlas/data/la_county_neighborhood_boundaries_single_simple.json"
+path = "V:\\PIER_Data\\Eric_Fournier\\JSON\\la_county_neighborhood_boundaries_single_simple.json"
 map_source = pd.read_json(path, typ='series', orient='column')
 neighborhoods = {}
 
@@ -82,7 +83,7 @@ map_source = ColumnDataSource(data=dict(
 seed = (12345)
 np.random.seed(seed)
 
-size = 1000
+size = 100000
 mu = np.log([2000, 200])
 sigma =[[0.2,0],[0,0.2]]
 
@@ -94,7 +95,7 @@ unique_names = np.asarray(list(set(neighborhood_names)))
 neighborhoods = [None]*size
 
 for i in range(size):
-    ind = np.random.randint(0,len(unique_names),1,dtype=int)
+    ind = np.random.randint(0,len(unique_names),1)
     neighborhoods[i] = unique_names[ind]
 
 neighborhoods = np.asarray(neighborhoods)
@@ -127,25 +128,25 @@ plot_source = ColumnDataSource(data=dict(
 
 #%% Create Stats Widget
 
-stats = PreText(text='', width=500)
+stats = PreText(text=str(df.describe()), width=700)
 
 #%% Create Map Plot
 
 def create_map(map_source):
     
-    MAP_TOOLS="pan,wheel_zoom,reset,hover,save"
+    MAP_TOOLS="pan,wheel_zoom,hover,save,reset"
     
     m = figure(title="Los Angeles County Neighborhoods", tools=MAP_TOOLS, 
-               plot_width=700, plot_height=900, min_border=10, 
-               x_axis_location="below", y_axis_location="left",webgl=True,
-               toolbar_location="above")
+               plot_width=800, plot_height=1000, min_border=50, 
+               x_axis_location="above", y_axis_location="left",webgl=True,
+               toolbar_location="below")
+    m.background_fill_color = "#fafafa"
+    m.xaxis.major_label_orientation = np.pi/4
     m.yaxis.axis_label = "Latitude [DD]"
     m.xaxis.axis_label = "Longitude [DD]"
-    
     m.patches('lon','lat', source=map_source,
               fill_color='color',
-              line_color='#3A5785', line_width=0.5)
-              
+              line_color='#3A5785', line_width=0.5)     
     hover = m.select_one(HoverTool)
     hover.point_policy = "follow_mouse"
     hover.tooltips = [
@@ -160,20 +161,18 @@ def create_map(map_source):
 
 def create_scatter(plot_source):
 
-    PLOT_TOOLS="pan,wheel_zoom,box_zoom,box_select,lasso_select,reset"
+    PLOT_TOOLS="pan,wheel_zoom,box_zoom,box_select,lasso_select,save,reset"
     
-    p = figure(tools=PLOT_TOOLS, plot_width=900, plot_height=900, 
-               min_border=50, min_border_left=50, toolbar_location="above", 
-               x_axis_location="below", y_axis_location="left", 
-               title="Pairwise Scatterplot", webgl=True)
-    
+    p = figure(tools=PLOT_TOOLS, plot_width=700, plot_height=700, 
+               min_border=50, min_border_left=50, toolbar_location="below", 
+               x_axis_location="above", y_axis_location="left", 
+               title="Pairwise Scatterplot", webgl=True)        
+    p.background_fill_color = "#fafafa"
+    p.xaxis.major_label_orientation = np.pi/4
     p.yaxis.axis_label = y_axis.value
     p.xaxis.axis_label = x_axis.value
-    
-    p.background_fill_color = None
     p.select(BoxSelectTool).select_every_mousemove = False
     p.select(LassoSelectTool).select_every_mousemove = False  
-    
     p.circle('x', 'y', source=plot_source, size=3, color="#3A5785", alpha=1.0, 
              selection_color="orange", nonselection_alpha=1.0, 
              selection_alpha=1.0)
@@ -183,14 +182,18 @@ def create_scatter(plot_source):
 #%% Create Y axis histogram
 
 def create_x_histogram(plot_source):
+    
+    HIST_TOOLS="pan,wheel_zoom,box_zoom,save,reset"
         
     xhist0, xedges0 = np.histogram(np.array(plot_source.data['x']), bins=20)
-    px = figure(toolbar_location=None, plot_width=500, 
-                plot_height=300, min_border=10, title="X-Axis Histogram",
-                y_axis_location="left", x_axis_location="below",
+    px = figure(tools=HIST_TOOLS, toolbar_location='left', plot_width=700, 
+                plot_height=300, min_border=50, title="X-Axis Histogram",
+                y_axis_location='right', x_axis_location="below",
                 webgl=True)
+    px.background_fill_color = "#fafafa"
+    px.xaxis.major_label_orientation = np.pi/4
     px.xaxis.axis_label = x_axis.value
-    px.yaxis.axis_label = 'Counts('+ x_axis.value + ')'
+    px.yaxis.axis_label = 'Frequency Count'
     xh = px.quad(bottom=0, left=xedges0[:-1], right=xedges0[1:], top=xhist0, 
             color="white", line_color="#3A5785")
     
@@ -200,14 +203,18 @@ def create_x_histogram(plot_source):
 
 def create_y_histogram(plot_source):
     
+    HIST_TOOLS="pan,wheel_zoom,box_zoom,save,reset"
+    
     yhist0, yedges0 = np.histogram(np.array(plot_source.data['y']), bins=20)
-    py = figure(toolbar_location=None, plot_width=500, 
-                plot_height=300, min_border=10, title="Y-Axis Histogram",
-                y_axis_location="left", x_axis_location="below",
-                webgl=True)
-    py.xaxis.axis_label = y_axis.value
-    py.yaxis.axis_label = 'Counts('+ y_axis.value + ')'
-    yh = py.quad(bottom=0, left=yedges0[:-1], right=yedges0[1:], top=yhist0, 
+    py = figure(tools=HIST_TOOLS, toolbar_location='above', plot_width=300, 
+                plot_height=700, min_border=50, title="Y-Axis Histogram",
+                y_axis_location="right", x_axis_location='below',
+                webgl=True)     
+    py.background_fill_color = "#fafafa"
+    py.xaxis.major_label_orientation = np.pi/4
+    py.xaxis.axis_label = 'Frequency Count' 
+    py.yaxis.axis_label = y_axis.value
+    yh = py.quad(left=0, bottom=yedges0[:-1], top=yedges0[1:], right=yhist0, 
             color="white", line_color="#3A5785")
     
     return py, yh
@@ -216,7 +223,8 @@ def create_y_histogram(plot_source):
     
 def update_x_axis(attr, old, new):
     
-    p.xaxis.axis_label = x_axis.value               
+    p.xaxis.axis_label = x_axis.value
+    px.xaxis.axis_label = x_axis.value
     plot_source.data['x'] = df[axis_map[new]].values
     xhist0, xedges0 = np.histogram(np.array(plot_source.data['x']), bins=20)  
     xh.data_source.data['right'] = xedges0[1:]
@@ -228,11 +236,12 @@ def update_x_axis(attr, old, new):
 def update_y_axis(attr, old, new):
     
     p.yaxis.axis_label = y_axis.value
+    py.yaxis.axis_label = y_axis.value
     plot_source.data['y'] = df[axis_map[new]].values
     yhist0, yedges0 = np.histogram(np.array(plot_source.data['y']), bins=20)  
-    yh.data_source.data['right'] = yedges0[1:]
-    yh.data_source.data['left'] = yedges0[:-1]
-    yh.data_source.data['top'] = yhist0  
+    yh.data_source.data['top'] = yedges0[1:]
+    yh.data_source.data['bottom'] = yedges0[:-1]
+    yh.data_source.data['right'] = yhist0  
     
 #%% Update Stats Panel Widget
 
@@ -297,7 +306,7 @@ m = create_map(map_source)
 
 sizing_mode = 'fixed'
 widgets = widgetbox([x_axis, y_axis], sizing_mode=sizing_mode)
-layout = row(column(widgets, stats, px, py), column(p), column(m))
+layout = row(column(row(widgets, Spacer(width=50), stats), column(row(p, py), row(px, Spacer(width=300,height=300)))), column(Spacer(width=50,height=183), m))
 curdoc().add_root(layout)
 curdoc().title = "Selection Histogram"
 
