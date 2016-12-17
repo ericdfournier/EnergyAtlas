@@ -24,7 +24,7 @@ from bokeh.plotting import (
 
 #%% Load Static Map Datasource
 
-path = "V:\\PIER_Data\\Eric_Fournier\\JSON\\la_county_neighborhood_boundaries_single_simple.json"
+path = "/Users/edf/Repositories/EnergyAtlas/data/la_county_neighborhood_boundaries_single_simple.json"
 map_source = pd.read_json(path, typ='series', orient='column')
 neighborhoods = {}
 
@@ -306,7 +306,7 @@ m = create_map(map_source)
 
 sizing_mode = 'fixed'
 widgets = widgetbox([x_axis, y_axis], sizing_mode=sizing_mode)
-layout = row(column(row(widgets, Spacer(width=50), stats), column(row(p, py), row(px, Spacer(width=300,height=300)))), column(Spacer(width=50,height=183), m))
+layout = row(column(row(widgets, Spacer(width=50), stats), column(row(p, py), row(px, Spacer(width=300,height=300)))), column(Spacer(width=50,height=180), m))
 curdoc().add_root(layout)
 curdoc().title = "Selection Histogram"
 
