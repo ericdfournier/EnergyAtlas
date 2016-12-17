@@ -15,7 +15,8 @@ from bokeh.models import (
     LassoSelectTool,
     HoverTool,
     Select,
-    PreText
+    PreText,
+    MultiSelect
     )
 from bokeh.plotting import (
     figure, 
@@ -129,6 +130,12 @@ plot_source = ColumnDataSource(data=dict(
 #%% Create Stats Widget
 
 stats = PreText(text=str(df.describe()), width=700)
+
+#%% Create Mult-Select Widget
+
+menu = list(zip(neighborhood_names, neighborhood_names))
+multi_select = MultiSelect(title='Select City:', value=[], options=menu,
+                           height=150)
 
 #%% Create Map Plot
 
@@ -271,13 +278,23 @@ def update_map(inds):
     
 #%% Update Selection    
     
-def update_selection(attr, old, new):
+def update_plot_selection(attr, old, new):
             
     inds = np.array(new['1d']['indices'], dtype=int)
     update_stats(inds)
     update_map(inds)
     
     return inds
+    
+#%% Update Map Selection    
+      
+def update_map_selection(attr, old, new):
+        
+    inds = np.in1d(neighborhoods, np.array(new)).nonzero()
+    update_stats(inds)
+    update_map(inds)  
+    
+    return inds 
     
 #%% Update Plot Source Data
 
@@ -306,10 +323,13 @@ m = create_map(map_source)
 
 sizing_mode = 'fixed'
 widgets = widgetbox([x_axis, y_axis], sizing_mode=sizing_mode)
-layout = row(column(row(widgets, Spacer(width=50), stats), column(row(p, py), row(px, Spacer(width=300,height=300)))), column(Spacer(width=50,height=180), m))
+layout = row(column(row(widgets, Spacer(width=50), stats), 
+                    column(row(p, py), row(px, Spacer(width=300,height=300)))), 
+                    column(multi_select, m))
 curdoc().add_root(layout)
 curdoc().title = "Selection Histogram"
 
 x_axis.on_change('value', update_x_axis)
 y_axis.on_change('value', update_y_axis)
-plot_source.on_change('selected', update_selection)
+multi_select.on_change('value', update_map_selection)
+plot_source.on_change('selected', update_plot_selection)
