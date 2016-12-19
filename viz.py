@@ -2,6 +2,7 @@
 
 import numpy as np
 import pandas as pd
+import copy
 
 from bokeh.layouts import (
     row, 
@@ -180,11 +181,11 @@ def create_scatter(plot_source):
     p.xaxis.axis_label = x_axis.value
     p.select(BoxSelectTool).select_every_mousemove = False
     p.select(LassoSelectTool).select_every_mousemove = False  
-    p.circle('x', 'y', source=plot_source, size=3, color="#3A5785", alpha=1.0, 
+    r = p.circle('x', 'y', source=plot_source, size=3, color="#3A5785", alpha=1.0, 
              selection_color="orange", nonselection_alpha=1.0, 
              selection_alpha=1.0)
-
-    return p
+    
+    return p, r
     
 #%% Create Y axis histogram
 
@@ -274,12 +275,12 @@ def update_map(inds):
         cur_names = np.unique(neighborhoods[inds])
         map_inds = np.in1d(neighborhood_names, cur_names)
         color[map_inds] = 'orange'
-        map_source.data['color'] = color
+        map_source.data['color'] = color    
     
 #%% Update Selection    
     
 def update_plot_selection(attr, old, new):
-            
+    
     inds = np.array(new['1d']['indices'], dtype=int)
     update_stats(inds)
     update_map(inds)
@@ -290,11 +291,16 @@ def update_plot_selection(attr, old, new):
       
 def update_map_selection(attr, old, new):
         
-    inds = np.in1d(neighborhoods, np.array(new)).nonzero()
+    inds = np.in1d(neighborhoods, np.array(new)).nonzero()[0]
     update_stats(inds)
-    update_map(inds)  
+    update_map(inds)
     
-    return inds 
+    #TODO: Need to figure out a way to update the selected 
+    # points within the scatterplot to reflect the map selection
+    
+    plot_source.selected['1d']['indices']= inds
+
+    return inds
     
 #%% Update Plot Source Data
 
@@ -314,7 +320,7 @@ y_axis = Select(title='Y-Axis', value='Energy Consumption [MBTU]',
 
 inds = np.asarray([], dtype=int)
 update_data()
-p = create_scatter(plot_source)
+p, r = create_scatter(plot_source)
 px, xh = create_x_histogram(plot_source)
 py, yh = create_y_histogram(plot_source)
 m = create_map(map_source)
