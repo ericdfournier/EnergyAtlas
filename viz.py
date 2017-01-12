@@ -2,7 +2,6 @@
 
 import numpy as np
 import pandas as pd
-import copy
 
 from bokeh.layouts import (
     row, 
@@ -277,7 +276,7 @@ def update_map(inds):
         color[map_inds] = 'orange'
         map_source.data['color'] = color    
     
-#%% Update Selection    
+#%% Update Selection    z
     
 def update_plot_selection(attr, old, new):
     
