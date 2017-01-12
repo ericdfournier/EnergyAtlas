@@ -276,7 +276,7 @@ def update_map(inds):
         color[map_inds] = 'orange'
         map_source.data['color'] = color    
     
-#%% Update Selection    z
+#%% Update Selection
     
 def update_plot_selection(attr, old, new):
     

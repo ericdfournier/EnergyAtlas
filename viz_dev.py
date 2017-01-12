@@ -234,7 +234,7 @@ def update_stats(inds):
 #%% Update Map
 
 def update_map(inds):
-    
+            
     if len(inds) == 0 or len(inds) == len(df['size'].values):
         map_source.data['lon'] = neighborhood_lon
         map_source.data['lat'] = neighborhood_lat
@@ -243,10 +243,16 @@ def update_map(inds):
         map_source.data['color'] = np.asarray(["white"]*len(neighborhood_names), dtype=object)
     else:
         color = np.asarray(["white"]*len(neighborhood_names), dtype=object)
-        cur_names = np.unique(neighborhoods[inds])
+        cur_names, cur_counts = np.unique(np.array(df['name'][inds]), return_counts=True)
+        
+        # TODO: Color patches on the basis of the number of counts for each
+        # unique match
+        
+        print(cur_names)
+        print(cur_counts)
         map_inds = np.in1d(neighborhood_names, cur_names)
         color[map_inds] = 'orange'
-        map_source.data['color'] = color    
+        map_source.data['color'] = color
     
 #%% Update Selection    
     
@@ -261,7 +267,7 @@ def update_plot_selection(attr, old, new):
 #%% Update Map Selection    
       
 def update_map_selection(attr, old, new):
-        
+    
     inds = np.in1d(neighborhoods, np.array(new)).nonzero()[0]
     update_stats(inds)
     update_map(inds)
