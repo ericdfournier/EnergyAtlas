@@ -109,7 +109,8 @@ stats = PreText(text=str(df.describe()), width=700)
 
 #%% Create Mult-Select Widget
 
-menu = list(zip(neighborhood_names, neighborhood_names))
+nm = np.unique(df['name'])
+menu = list(zip(nm,nm))
 multi_select = MultiSelect(title='Select City:', value=[], options=menu,
                            height=150)
 
@@ -271,7 +272,7 @@ def update_plot_selection(attr, old, new):
       
 def update_map_selection(attr, old, new):
     
-    inds = np.in1d(neighborhoods, np.array(new)).nonzero()[0]
+    inds = np.in1d(df['name'], np.array(new)).nonzero()[0]
     update_stats(inds)
     update_map(inds)
     
