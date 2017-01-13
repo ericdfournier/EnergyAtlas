@@ -85,7 +85,7 @@ map_source = ColumnDataSource(data=dict(
 
 #%% Create Reference Data Frame
 
-df = pd.read_pickle("/Users/edf/Repositories/EnergyAtlas/data/input_table_small.pkl")
+df = pd.read_pickle("/Users/edf/Repositories/EnergyAtlas/data/input_table_medium.pkl")
 
 #%% Create Axis Map
 
