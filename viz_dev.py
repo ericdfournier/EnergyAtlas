@@ -2,6 +2,7 @@
 
 import numpy as np
 import pandas as pd
+from scipy import stats as st
 
 from bokeh.layouts import (
     row, 
@@ -66,8 +67,10 @@ for i,feature in enumerate(map_source.features):
 neighborhood_lon = np.asarray([neighborhood["lon"] for neighborhood in neighborhoods.values()])
 neighborhood_lat = np.asarray([neighborhood["lat"] for neighborhood in neighborhoods.values()])
 neighborhood_names = np.asarray([neighborhood['name'] for neighborhood in neighborhoods.values()])
-neighborhood_avg = np.random.randint(100,300,len(neighborhood_names))       
+neighborhood_avg = np.random.randint(100,300,len(neighborhood_names))    
+   
 color = np.asarray(["white"]*len(neighborhood_names))
+alpha = np.asarray([1.0]*len(neighborhood_names))
 
 #%% Create Map columnar data source
 
@@ -76,7 +79,8 @@ map_source = ColumnDataSource(data=dict(
     lat = neighborhood_lat,
     avg_consumption = neighborhood_avg,
     name = neighborhood_names,
-    color = color
+    color = color,
+    alpha = alpha
 ))             
 
 #%% Create Reference Data Frame
@@ -125,6 +129,7 @@ def create_map(map_source):
     m.xaxis.axis_label = "Longitude [DD]"
     m.patches('lon','lat', source=map_source,
               fill_color='color',
+              fill_alpha='alpha',
               line_color='#3A5785', line_width=0.5)     
     hover = m.select_one(HoverTool)
     hover.point_policy = "follow_mouse"
@@ -243,16 +248,14 @@ def update_map(inds):
         map_source.data['color'] = np.asarray(["white"]*len(neighborhood_names), dtype=object)
     else:
         color = np.asarray(["white"]*len(neighborhood_names), dtype=object)
+        alpha = np.asarray([1.0]*len(neighborhood_names))
         cur_names, cur_counts = np.unique(np.array(df['name'][inds]), return_counts=True)
-        
-        # TODO: Color patches on the basis of the number of counts for each
-        # unique match
-        
-        print(cur_names)
-        print(cur_counts)
         map_inds = np.in1d(neighborhood_names, cur_names)
+        ranks = st.rankdata(cur_counts, "average")/len(cur_counts)
         color[map_inds] = 'orange'
+        alpha[np.where(map_inds)] = ranks
         map_source.data['color'] = color
+        map_source.data['alpha'] = alpha
     
 #%% Update Selection    
     
