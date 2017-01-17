@@ -2,10 +2,12 @@
 # Raw Source Inputs #
 #####################
 
-raw/
+JointPlot/raw/
 
 ########################
 # Pickel Serial Inputs #
 ########################
 
 *.pkl
+
+TimeSeries/daily/
