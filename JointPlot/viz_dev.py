@@ -24,10 +24,26 @@ from bokeh.plotting import (
     curdoc,
     )
 
+#%% Load Map Statistics
+
+stats_path = "/Users/edf/Repositories/EnergyAtlas/JointPlot/data/pkl/neighborhood_stats.pkl"
+stats_source = pd.read_pickle(stats_path)
+
+#%% Load Scatter Plot Dependenant Variable Fits 
+
+yhat_path = "/Users/edf/Repositories/EnergyAtlas/JointPlot/data/pkl/yhat.pkl"
+yhat_source = pd.read_pickle(yhat_path)
+
+#%% Load Scatter Plot Independent Variable Values
+
+xp_path = "/Users/edf/Repositories/EnergyAtlas/JointPlot/data/pkl/xp.pkl"
+xp_source = pd.read_pickle(xp_path)
+
+
 #%% Load Static Map Datasource
 
-path = "/Users/edf/Repositories/EnergyAtlas/data/la_county_neighborhood_boundaries_single_simple.json"
-map_source = pd.read_json(path, typ='series', orient='column')
+map_path = "/Users/edf/Repositories/EnergyAtlas/JointPlot/data/json/la_county_neighborhood_boundaries_single_simple.json"
+map_source = pd.read_json(map_path, typ='series', orient='column')
 neighborhoods = {}
 
 #%% Clean Raw Static Map Datasource
