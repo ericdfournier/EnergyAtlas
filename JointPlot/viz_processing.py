@@ -67,7 +67,7 @@ neighborhood_stats['mean_intensity'] = neighborhood_mean_intensity
 neighborhood_stats['mean_sqft'] = neighborhood_mean_sqft
 neighborhood_stats['count'] = neighborhood_count
 
-#%% Generate Output Data Frames
+#%% Generate Full Output Data Frames
 
 final = pd.DataFrame(index=range(len(df_new)))
 
@@ -76,15 +76,6 @@ final['consumption'] = np.asarray(df_new['CONSUMPTION']).astype(int)
 final['intensity'] = np.asarray(df_new['INTENSITY']).astype(float)
 final['year'] = np.asarray(df_new['YEAR']).astype(int)
 final['name'] = np.asarray(df_new['CITY_NAME'])
-
-#%% Generate Small Output Data Frame
-
-size = 10000
-choices = range(len(final))
-inds = np.random.choice(choices,size,replace=False)
-final_small = final.ix[inds,:]
-final_small.reset_index(inplace=True)
-final_small.drop('index',axis=1,inplace=True)
 
 #%% Generate Medium Output Data Frame
 
@@ -128,29 +119,6 @@ for i,v in enumerate(inds):
         
 yhat.columns = names
 xp.columns = names
-
-#%% Export Data Frame to CSV
-
-final.to_csv("/Users/edf/Repositories/EnergyAtlas/JointPlot/raw/input_table.csv")
-final_small.to_csv("/Users/edf/Repositories/EnergyAtlas/JointPlot/raw/input_table_small.csv")
-final_medium.to_csv("/Users/edf/Repositories/EnergyAtlas/JointPlot/raw/input_table_medium.csv")
-neighborhood_stats.to_csv("/Users/edf/Repositories/EnergyAtlas/JointPlot/raw/neighborhood_stats.csv")
-yhat.to_csv("/Users/edf/Repositories/EnergyAtlas/JointPlot/raw/yhat.csv")
-xp.to_csv("/Users/edf/Repositories/EnergyAtlas/JointPlot/raw/xp.csv")
-
-#%% Export Dataframe to Pickle
-
-final.to_pickle("/Users/edf/Repositories/EnergyAtlas/JointPlot/data/pkl/input_table.pkl")
-final_small.to_pickle("/Users/edf/Repositories/EnergyAtlas/JointPlot/data/pkl/input_table_small.pkl")
-final_medium.to_pickle("/Users/edf/Repositories/EnergyAtlas/JointPlot/data/pkl/input_table_medium.pkl")
-neighborhood_stats.to_pickle("/Users/edf/Repositories/EnergyAtlas/JointPlot/data/pkl/neighborhood_stats.pkl")
-yhat.to_pickle("/Users/edf/Repositories/EnergyAtlas/JointPlot/data/pkl/yhat.pkl")
-xp.to_pickle("/Users/edf/Repositories/EnergyAtlas/JointPlot/data/pkl/xp.pkl")
-
-
-
-
-
 
 #%% Load Static Map Datasource
 
@@ -225,3 +193,19 @@ map_source = ColumnDataSource(data=dict(
     color = color,
     alpha = alpha
 ))             
+
+#%% Export Data Frame to CSV
+
+final.to_csv("/Users/edf/Repositories/EnergyAtlas/JointPlot/raw/input_table.csv")
+final_medium.to_csv("/Users/edf/Repositories/EnergyAtlas/JointPlot/raw/input_table_medium.csv")
+neighborhood_stats.to_csv("/Users/edf/Repositories/EnergyAtlas/JointPlot/raw/neighborhood_stats.csv")
+yhat.to_csv("/Users/edf/Repositories/EnergyAtlas/JointPlot/raw/yhat.csv")
+xp.to_csv("/Users/edf/Repositories/EnergyAtlas/JointPlot/raw/xp.csv")
+
+#%% Export Dataframe to Pickle
+
+final.to_pickle("/Users/edf/Repositories/EnergyAtlas/JointPlot/data/pkl/input_table.pkl")
+final_medium.to_pickle("/Users/edf/Repositories/EnergyAtlas/JointPlot/data/pkl/input_table_medium.pkl")
+neighborhood_stats.to_pickle("/Users/edf/Repositories/EnergyAtlas/JointPlot/data/pkl/neighborhood_stats.pkl")
+yhat.to_pickle("/Users/edf/Repositories/EnergyAtlas/JointPlot/data/pkl/yhat.pkl")
+xp.to_pickle("/Users/edf/Repositories/EnergyAtlas/JointPlot/data/pkl/xp.pkl")

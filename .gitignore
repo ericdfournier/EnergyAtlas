@@ -10,4 +10,8 @@ JointPlot/raw/
 
 *.pkl
 
+######################
+# Time Series Inputs #
+######################
+
 TimeSeries/daily/

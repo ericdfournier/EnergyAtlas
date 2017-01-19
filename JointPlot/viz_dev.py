@@ -3,6 +3,7 @@
 import numpy as np
 import pandas as pd
 from scipy import stats as st
+import copy
 
 from bokeh.layouts import (
     row, 
@@ -38,7 +39,6 @@ yhat_source = pd.read_pickle(yhat_path)
 
 xp_path = "/Users/edf/Repositories/EnergyAtlas/JointPlot/data/pkl/xp.pkl"
 xp_source = pd.read_pickle(xp_path)
-
 
 #%% Load Static Map Datasource
 
@@ -101,7 +101,7 @@ map_source = ColumnDataSource(data=dict(
 
 #%% Create Reference Data Frame
 
-df = pd.read_pickle("/Users/edf/Repositories/EnergyAtlas/data/input_table_medium.pkl")
+df = pd.read_pickle("/Users/edf/Repositories/EnergyAtlas/JointPlot/data/pkl/input_table_medium.pkl")
 
 #%% Create Axis Map
 
@@ -289,14 +289,13 @@ def update_plot_selection(attr, old, new):
 def update_map_selection(attr, old, new):
     
     inds = np.in1d(df['name'], np.array(new)).nonzero()[0]
-    update_stats(inds)
-    update_map(inds)
-    
-    #TODO: Need to figure out a way to update the selected 
-    # points within the scatterplot to reflect the map selection
-    
-    # plot_source.selected['1d']['indices']= inds
+    selection_copy = copy.copy(plot_source.selected)
+    selection_copy['1d']['indices'] = inds
+    plot_source.selected = selection_copy
 
+    # There seems to be a delay between when the selection is made and when it
+    # is rendered...
+    
     return inds
     
 #%% Update Plot Source Data
