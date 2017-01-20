@@ -1,7 +1,11 @@
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+
 #%% Package Imports
 
 import numpy as np
 import pandas as pd
+import pickle
 from scipy import stats as st
 import copy
 
@@ -25,10 +29,10 @@ from bokeh.plotting import (
     curdoc,
     )
 
-#%% Load Map Statistics
+#%% Load Static Map Datasource
 
-stats_path = "/Users/edf/Repositories/EnergyAtlas/JointPlot/data/pkl/neighborhood_stats.pkl"
-stats_source = pd.read_pickle(stats_path)
+map_path = "/Users/edf/Repositories/EnergyAtlas/JointPlot/data/pkl/map_source.pkl"
+map_source = pickle.load(open(map_path,"rb")) 
 
 #%% Load Scatter Plot Dependenant Variable Fits 
 
@@ -40,68 +44,10 @@ yhat_source = pd.read_pickle(yhat_path)
 xp_path = "/Users/edf/Repositories/EnergyAtlas/JointPlot/data/pkl/xp.pkl"
 xp_source = pd.read_pickle(xp_path)
 
-#%% Load Static Map Datasource
-
-map_path = "/Users/edf/Repositories/EnergyAtlas/JointPlot/data/json/la_county_neighborhood_boundaries_single_simple.json"
-map_source = pd.read_json(map_path, typ='series', orient='column')
-neighborhoods = {}
-
-#%% Clean Raw Static Map Datasource
-
-for i,feature in enumerate(map_source.features):
-        
-    if feature['geometry']['type'] == 'Polygon':
-        
-        coords = feature['geometry']['coordinates'][0]
-        name = feature['properties']['Name'][:]
-        lon,lat,_ = np.reshape(coords,[len(coords),3]).T
-        neighborhoods[i] = {}
-        neighborhoods[i]['lat'] = lat
-        neighborhoods[i]['lon'] = lon
-        neighborhoods[i]['name'] = name
-        
-    elif feature['geometry']['type'] == 'MultiPolygon':
-        
-        coords = feature['geometry']['coordinates'][:]
-        name = feature['properties']['Name'][:]
-        lons = []
-        lats = []
-        
-        for j, poly in enumerate(coords):
-            
-            lon,lat,_ = np.reshape(coords[j][0],[len(coords[j][0]),3]).T
-            lons.append(lon)
-            lats.append(lat)
-        
-        neighborhoods[i] = {}
-        neighborhoods[i]['lat'] = lats
-        neighborhoods[i]['lon'] = lons
-        neighborhoods[i]['name'] = name
-
-#%% Prep Static Map Source Data for Plotting
-
-neighborhood_lon = np.asarray([neighborhood["lon"] for neighborhood in neighborhoods.values()])
-neighborhood_lat = np.asarray([neighborhood["lat"] for neighborhood in neighborhoods.values()])
-neighborhood_names = np.asarray([neighborhood['name'] for neighborhood in neighborhoods.values()])
-neighborhood_avg = np.random.randint(100,300,len(neighborhood_names))    
-   
-color = np.asarray(["white"]*len(neighborhood_names))
-alpha = np.asarray([1.0]*len(neighborhood_names))
-
-#%% Create Map columnar data source
-
-map_source = ColumnDataSource(data=dict(
-    lon = neighborhood_lon,
-    lat = neighborhood_lat,
-    avg_consumption = neighborhood_avg,
-    name = neighborhood_names,
-    color = color,
-    alpha = alpha
-))             
-
 #%% Create Reference Data Frame
 
-df = pd.read_pickle("/Users/edf/Repositories/EnergyAtlas/JointPlot/data/pkl/input_table_medium.pkl")
+ref_path = "/Users/edf/Repositories/EnergyAtlas/JointPlot/data/pkl/input_table_medium.pkl"
+df = pd.read_pickle(ref_path)
 
 #%% Create Axis Map
 
@@ -127,7 +73,8 @@ stats = PreText(text=str(df.describe()), width=700)
 
 nm = np.unique(df['name'])
 menu = list(zip(nm,nm))
-multi_select = MultiSelect(title='Select City:', value=[], options=menu,
+del menu[0:2]
+multi_select = MultiSelect(title='Select City:', value=[], options=menu[3:],
                            height=150)
 
 #%% Create Map Plot
@@ -151,9 +98,11 @@ def create_map(map_source):
     hover = m.select_one(HoverTool)
     hover.point_policy = "follow_mouse"
     hover.tooltips = [
-        ("Name", "@name"),
-        ("(Long, Lat)", "($x, $y)"),
-        ("Mean Annual Energy Consumption [MBTU / Megaparcel]", "@avg_consumption")
+        ("Neighborhood Name", "@name"),
+        ("Total Megaparcel Count [Megaparcels]", "@count"),
+        ("Mean Square Footage Per Megaparcel [sq.ft.]", "@avg_sqft"),
+        ("Mean Annual Energy Consumption [MBTU / Megaparcel]", "@avg_consumption"),
+        ("Mean Annual Energy Consumption Intensity [MBTU / sq.ft.]", "@avg_intensity")
     ]
 
     return m
@@ -258,16 +207,16 @@ def update_stats(inds):
 def update_map(inds):
             
     if len(inds) == 0 or len(inds) == len(df['size'].values):
-        map_source.data['lon'] = neighborhood_lon
-        map_source.data['lat'] = neighborhood_lat
-        map_source.data['avg_consumption'] = neighborhood_avg
-        map_source.data['name'] = neighborhood_names
-        map_source.data['color'] = np.asarray(["white"]*len(neighborhood_names), dtype=object)
+#        map_source.data['lon'] = neighborhood_lon
+#        map_source.data['lat'] = neighborhood_lat
+#        map_source.data['avg_consumption'] = neighborhood_avg
+#        map_source.data['name'] = neighborhood_names
+        map_source.data['color'] = np.asarray(["white"]*len(map_source.data['name']), dtype=object)
     else:
-        color = np.asarray(["white"]*len(neighborhood_names), dtype=object)
-        alpha = np.asarray([1.0]*len(neighborhood_names))
+        color = np.asarray(["white"]*len(map_source.data['name']), dtype=object)
+        alpha = np.asarray([1.0]*len(map_source.data['name']))
         cur_names, cur_counts = np.unique(np.array(df['name'][inds]), return_counts=True)
-        map_inds = np.in1d(neighborhood_names, cur_names)
+        map_inds = np.in1d(map_source.data['name'], cur_names)
         ranks = st.rankdata(cur_counts, "average")/len(cur_counts)
         color[map_inds] = 'orange'
         alpha[np.where(map_inds)] = ranks
