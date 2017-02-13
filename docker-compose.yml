@@ -1,0 +1,8 @@
+version: '1'
+services:
+  dev:
+    restart: always
+    build: Docker/.
+    container_name: bokeh_viz
+    ports:
+      - "5006:8888"
