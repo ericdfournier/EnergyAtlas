@@ -1,4 +1,4 @@
-FROM continuumio/anaconda
+FROM continuumio/miniconda
 
 MAINTAINER Eric Daniel Fournier <me@ericdfournier.com>
 
@@ -8,8 +8,7 @@ RUN conda install --yes bokeh
 
 RUN mkdir /repo
 RUN cd /repo
-RUN git clone github.com/ericdfournier/bokehviz
-RUN cd /
-RUN bokeh serve /repo/bokehviz/JointPlot
+RUN git clone https://github.com/ericdfournier/bokehviz.git
+RUN bokeh serve /repo/bokehviz/JointPlot/viz.py
 
 EXPOSE 5006:8888

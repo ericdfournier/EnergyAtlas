@@ -1,6 +1,6 @@
-version: '1'
+version: '2.0'
 services:
-  dev:
+  viz:
     restart: always
     build: Docker/.
     container_name: bokehviz
