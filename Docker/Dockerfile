@@ -8,7 +8,8 @@ RUN conda install --yes bokeh
 
 RUN mkdir /repo
 RUN cd /repo
-RUN git clone github.com/ericdfournier/bokeh-viz
+RUN git clone github.com/ericdfournier/bokehviz
 RUN cd /
+RUN bokeh serve /repo/bokehviz/JointPlot
 
-EXPOSE 8888
+EXPOSE 5006:8888
